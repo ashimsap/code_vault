@@ -13,11 +13,14 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeModeProvider);
     final activeTheme = ref.watch(activeThemeProvider);
 
     return MaterialApp(
       title: 'Code Vault',
-      theme: activeTheme.data,
+      theme: activeTheme,
+      darkTheme: activeTheme, // Apply the same logic for dark theme
+      themeMode: themeMode,
       debugShowCheckedModeBanner: false, // Hides the debug banner
       home: const MainScreen(),
     );

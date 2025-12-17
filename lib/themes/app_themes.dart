@@ -1,38 +1,27 @@
 import 'package:flutter/material.dart';
 
-// A class to hold theme information
-class AppTheme {
+// A simple class to hold the accent color and its name
+class AccentTheme {
   final String name;
-  final ThemeData data;
+  final Color color;
 
-  const AppTheme(this.name, this.data);
+  const AccentTheme(this.name, this.color);
 }
 
-// List of available themes
-final List<AppTheme> appThemes = [
-  AppTheme('Default', defaultTheme),
-  AppTheme('Minty', mintyTheme),
-  AppTheme('Lavender', lavenderTheme),
-  AppTheme('Sunset', sunsetTheme),
+// --- BASE THEMES ---
+// Defines the overall look of the app in light and dark mode.
+final baseLightTheme = ThemeData.light(useMaterial3: true);
+final baseDarkTheme = ThemeData.dark(useMaterial3: true);
+
+// --- ACCENT THEMES ---
+// List of available accent colors.
+final List<AccentTheme> accentThemes = [
+  const AccentTheme('Default', Colors.deepPurple),
+  const AccentTheme('Mint', Color(0xFF66CDAA)),
+  const AccentTheme('Lavender', Color(0xFFBDB2FF)),
+  const AccentTheme('Sunset', Color(0xFFFFB3A7)),
+  const AccentTheme('Ocean', Color(0xFF81D4FA)),
+  const AccentTheme('Rose', Color(0xFFF48FB1)),
+  const AccentTheme('Forest', Color(0xFF81C784)),
+  const AccentTheme('Sand', Color(0xFFD2B48C)),
 ];
-
-// Theme Definitions
-final defaultTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-  useMaterial3: true,
-);
-
-final mintyTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-  useMaterial3: true,
-);
-
-final lavenderTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 159, 134, 209)),
-  useMaterial3: true,
-);
-
-final sunsetTheme = ThemeData(
-  colorScheme: ColorScheme.fromSeed(seedColor: Color.fromARGB(255, 255, 159, 128)),
-  useMaterial3: true,
-);
