@@ -1,5 +1,7 @@
 import 'package:code_vault/helpers/storage_helper.dart';
 import 'package:code_vault/http_server.dart';
+import 'package:code_vault/models/snippet.dart';
+import 'package:code_vault/repositories/snippet_repository.dart';
 import 'package:code_vault/themes/app_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,31 +9,55 @@ import 'package:network_info_plus/network_info_plus.dart';
 
 // --- THEME PROVIDERS ---
 
-// Manages the app's primary theme mode (light or dark)
 final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
-
-// Manages the selected accent theme
 final accentThemeProvider = StateProvider<AccentTheme>((ref) => accentThemes[0]);
 
-// Combines the base theme and accent theme into the final, active theme
 final activeThemeProvider = Provider<ThemeData>((ref) {
   final mode = ref.watch(themeModeProvider);
   final accent = ref.watch(accentThemeProvider);
   final baseTheme = (mode == ThemeMode.light) ? baseLightTheme : baseDarkTheme;
-
-  // Create a new ColorScheme using the base theme but with the chosen accent color
-  final newColorScheme = baseTheme.colorScheme.copyWith(
-    primary: accent.color,
-    secondary: accent.color,
-  );
-
-  // Apply the new color scheme to the base theme
-  return baseTheme.copyWith(
-    colorScheme: newColorScheme,
-    // You can customize other theme properties here too
-    // e.g., appBarTheme, buttonTheme, etc.
-  );
+  final newColorScheme = baseTheme.colorScheme.copyWith(primary: accent.color, secondary: accent.color);
+  return baseTheme.copyWith(colorScheme: newColorScheme);
 });
+
+// --- SNIPPET PROVIDERS ---
+
+final snippetRepositoryProvider = Provider<SnippetRepository>((ref) {
+  final dbHelper = ref.watch(storageHelperProvider);
+  return SnippetRepository(dbHelper);
+});
+
+final snippetListProvider = StateNotifierProvider<SnippetNotifier, List<Snippet>>((ref) {
+  final repository = ref.watch(snippetRepositoryProvider);
+  return SnippetNotifier(repository);
+});
+
+class SnippetNotifier extends StateNotifier<List<Snippet>> {
+  final SnippetRepository _repository;
+
+  SnippetNotifier(this._repository) : super([]) {
+    loadSnippets();
+  }
+
+  Future<void> loadSnippets() async {
+    state = await _repository.readAll();
+  }
+
+  Future<void> addSnippet(Snippet snippet) async {
+    await _repository.create(snippet);
+    loadSnippets(); // Reload the list
+  }
+
+  Future<void> updateSnippet(Snippet snippet) async {
+    await _repository.update(snippet);
+    loadSnippets(); // Reload the list
+  }
+
+  Future<void> deleteSnippet(int id) async {
+    await _repository.delete(id);
+    loadSnippets(); // Reload the list
+  }
+}
 
 // --- SERVER AND NETWORK PROVIDERS ---
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:code_vault/views/home_screen.dart';
 import 'package:code_vault/views/settings_view.dart';
@@ -17,8 +18,17 @@ class MainScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = ref.watch(selectedIndexProvider);
+    final brightness = Theme.of(context).brightness;
 
-    return SafeArea(
+    // This widget allows us to control the system's UI overlay (like the status bar)
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle(
+        // Make the status bar background transparent
+        statusBarColor: Colors.transparent,
+        // Automatically adjust the icon brightness based on the app's theme
+        statusBarIconBrightness: brightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: brightness, // For iOS
+      ),
       child: Scaffold(
         body: _widgetOptions.elementAt(selectedIndex),
         bottomNavigationBar: BottomNavigationBar(
