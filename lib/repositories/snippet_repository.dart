@@ -8,8 +8,8 @@ class SnippetRepository {
 
   Future<Snippet> create(Snippet snippet) async {
     final db = await _storageHelper.database;
-    final id = await db.insert('snippets', snippet.toJson());
-    return snippet; // In a real app, you'd return a new object with the ID.
+    final id = await db.insert('snippets', snippet.toDbJson()); // Use toDbJson()
+    return snippet.copyWith(id: id);
   }
 
   Future<List<Snippet>> readAll() async {
@@ -22,7 +22,7 @@ class SnippetRepository {
     final db = await _storageHelper.database;
     return db.update(
       'snippets',
-      snippet.toJson(),
+      snippet.toDbJson(), // Use toDbJson()
       where: 'id = ?',
       whereArgs: [snippet.id],
     );

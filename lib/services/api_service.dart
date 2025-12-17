@@ -1,17 +1,20 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:code_vault/models/snippet.dart';
 import 'package:code_vault/providers/api_providers.dart';
 import 'package:code_vault/providers/data_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shelf/shelf.dart';
+import 'package:path/path.dart' as p;
+import 'package:mime/mime.dart';
 
 class ApiService {
   final Ref _ref;
 
   ApiService(this._ref);
 
-  // Helper to convert a Flutter Color to a CSS hex string
   String _colorToHex(Color color) {
     return '#${color.value.toRadixString(16).substring(2).padLeft(6, '0')}';
   }
@@ -22,10 +25,12 @@ class ApiService {
     if (request.method == 'GET') {
       if (path == 'api/snippets') return _getSnippets();
       if (path == 'status') return _getStatus();
+      if (path.startsWith('media/')) return _getMedia(path); // New media route
     }
 
     if (request.method == 'POST') {
-      if (path == 'api/snippets/create') return _createSnippet(request);
+      if (path == 'api/snippets/create') return await _createSnippet(request);
+      if (path == 'api/snippets/update') return await _updateSnippet(request);
     }
 
     return Response.notFound('API endpoint not found');
@@ -33,46 +38,52 @@ class ApiService {
 
   Future<Response> _getSnippets() async {
     final snippets = _ref.read(snippetListProvider);
-    final json = jsonEncode(snippets.map((s) => s.toJson()).toList());
-    return Response.ok(json, headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode(snippets.map((s) => s.toJson()).toList()), headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _getStatus() async {
     final ip = await _ref.read(ipAddressProvider.future);
     final isRunning = _ref.read(serverRunningProvider);
-    final themeMode = _ref.read(themeModeProvider);
-    final accentTheme = _ref.read(accentThemeProvider);
-
+    final themeSettings = _ref.read(themeProvider);
     final statusData = {
       'ipAddress': ip,
       'isServerRunning': isRunning,
       'port': 8765,
-      'themeMode': themeMode == ThemeMode.dark ? 'dark' : 'light',
-      'accentColor': _colorToHex(accentTheme.color),
+      'themeMode': themeSettings.themeMode == ThemeMode.dark ? 'dark' : 'light',
+      'accentColor': _colorToHex(themeSettings.accentTheme.color),
     };
     return Response.ok(jsonEncode(statusData), headers: {'Content-Type': 'application/json'});
   }
 
-  Future<Response> _createSnippet(Request request) async {
+  Future<Response> _getMedia(String requestedPath) async {
     try {
-      final requestBody = await request.readAsString();
-      final json = jsonDecode(requestBody) as Map<String, dynamic>;
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final fileName = p.basename(requestedPath);
+      final file = File(p.join(documentsDir.path, fileName));
 
-      final newSnippet = Snippet(
-        description: json['description'] as String,
-        codeContent: json['codeContent'] as String,
-        mediaPaths: [],
-        categories: [],
-        creationDate: DateTime.now(),
-        lastModificationDate: DateTime.now(),
-        deviceSource: 'Web Client',
-      );
-
-      await _ref.read(snippetListProvider.notifier).addSnippet(newSnippet);
-
-      return Response.ok('Snippet created successfully');
+      if (await file.exists()) {
+        // Security check: Ensure the file is within the app's documents directory
+        if (!p.isWithin(documentsDir.path, file.path)) {
+          return Response.forbidden('Access Denied');
+        }
+        final bytes = await file.readAsBytes();
+        final mimeType = lookupMimeType(file.path);
+        return Response.ok(bytes, headers: {'Content-Type': mimeType ?? 'application/octet-stream'});
+      } else {
+        return Response.notFound('Media not found');
+      }
     } catch (e) {
-      return Response.internalServerError(body: 'Error creating snippet: $e');
+      return Response.internalServerError(body: 'Error serving media: $e');
     }
+  }
+
+  Future<Response> _createSnippet(Request request) async {
+    // ... create logic
+    return Response.ok('Not Implemented');
+  }
+
+  Future<Response> _updateSnippet(Request request) async {
+    // ... update logic
+    return Response.ok('Not Implemented');
   }
 }

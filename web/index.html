@@ -7,20 +7,18 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Code Vault</h1>
-    <div id="status-container"></div>
-    <hr>
-    
-    <h2>Add New Snippet</h2>
-    <form id="add-snippet-form">
-        <textarea id="description" placeholder="Description..." required></textarea>
-        <textarea id="code" placeholder="Code..." required></textarea>
-        <button type="submit">Add Snippet</button>
-    </form>
+    <!-- Main View (Grid of Snippets) -->
+    <div id="main-view">
+        <div class="container">
+            <h1>Snippets</h1>
+            <div id="snippets-grid"></div>
+        </div>
+        <button id="fab" class="fab">&#43;</button>
+    </div>
 
-    <h2>Snippets</h2>
-    <div id="snippets-container">
-        <p>Loading snippets...</p>
+    <!-- Detail/Edit View (Initially Hidden) -->
+    <div id="detail-view" style="display: none;">
+        <!-- This will be populated by JavaScript -->
     </div>
 
     <script src="app.js"></script>

@@ -19,7 +19,9 @@ class StorageHelper {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    // The line that was deleting the database has been removed.
+
+    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _upgradeDB);
   }
 
   Future _createDB(Database db, int version) async {
@@ -30,13 +32,21 @@ class StorageHelper {
 CREATE TABLE snippets (
   id $idType,
   description $textType,
+  fullDescription $textType,
   codeContent $textType,
-  mediaPaths $textType, -- Stored as a JSON string
-  categories $textType, -- Stored as a JSON string
+  mediaPaths $textType,
+  categories $textType,
   creationDate $textType,
   lastModificationDate $textType,
   deviceSource $textType
 )
 ''');
+  }
+
+  // A simple migration strategy: add the new column if it doesn't exist.
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE snippets ADD COLUMN fullDescription TEXT NOT NULL DEFAULT \'\'');
+    }
   }
 }

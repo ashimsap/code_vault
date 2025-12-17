@@ -1,95 +1,119 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const statusContainer = document.getElementById('status-container');
-    const snippetsContainer = document.getElementById('snippets-container');
-    const addSnippetForm = document.getElementById('add-snippet-form');
+    // --- DOM Elements ---
+    const mainView = document.getElementById('main-view');
+    const detailView = document.getElementById('detail-view');
+    const snippetsGrid = document.getElementById('snippets-grid');
+    const fab = document.getElementById('fab');
 
+    let snippets = [];
+    let currentSnippet = null;
+
+    // --- Functions ---
     const applyTheme = (theme) => {
         document.documentElement.style.setProperty('--accent-color', theme.accentColor);
-        if (theme.themeMode === 'dark') {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+        document.body.classList.toggle('dark-mode', theme.themeMode === 'dark');
     };
 
-    const fetchStatus = async () => {
-        try {
-            const response = await fetch('/status');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const status = await response.json();
-
-            applyTheme(status); // Apply the theme
-
-            let statusHtml = '';
-            if (status.isServerRunning) {
-                statusHtml += `<p class="success">Server is running!</p>`;
-                if (status.ipAddress) {
-                    statusHtml += `<p>URL: <a href="http://${status.ipAddress}:${status.port}">http://${status.ipAddress}:${status.port}</a></p>`;
-                }
-            } else {
-                statusHtml += `<p class="error">Server is not running.</p>`;
-            }
-            statusContainer.innerHTML = statusHtml;
-        } catch (e) {
-            statusContainer.innerHTML = `<p class="error">Failed to fetch status: ${e.message}</p>`;
-        }
+    const renderSnippets = () => {
+        snippetsGrid.innerHTML = snippets.map(snippet => {
+            const mediaContent = snippet.firstMediaUrl
+                ? `<img src="${snippet.firstMediaUrl}" alt="Snippet Media">`
+                : `<pre><code>${escapeHtml(snippet.codeContent)}</code></pre>`;
+            return `
+                <div class="snippet-card" data-id="${snippet.id}">
+                    <h3>${escapeHtml(snippet.description)}</h3>
+                    <div class="media-preview">${mediaContent}</div>
+                </div>
+            `;
+        }).join('');
     };
 
-    const fetchSnippets = async () => {
-        try {
-            const response = await fetch('/api/snippets');
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-            const snippets = await response.json();
+    const openDetailView = (snippet) => {
+        currentSnippet = snippet;
+        const mediaContent = snippet.firstMediaUrl 
+            ? `<img src="${snippet.firstMediaUrl}" alt="Snippet Media">`
+            : 'Add Media';
 
-            if (snippets.length === 0) {
-                snippetsContainer.innerHTML = '<p>No snippets found.</p>';
-                return;
-            }
+        detailView.innerHTML = `
+            <div class="detail-header">
+                <button id="back-button">&larr; Back</button>
+                <button id="save-button">Save</button>
+            </div>
+            <div class="detail-body">
+                <input type="text" id="detail-title" value="${escapeHtml(snippet.description)}">
+                <div class="detail-side-by-side">
+                    <textarea id="detail-description" placeholder="Description...">${escapeHtml(snippet.fullDescription || '')}</textarea>
+                    <div class="detail-media-box">${mediaContent}</div>
+                </div>
+                <textarea id="detail-code" placeholder="Code...">${escapeHtml(snippet.codeContent || '')}</textarea>
+            </div>
+        `;
+        mainView.style.display = 'none';
+        detailView.style.display = 'flex';
 
-            let snippetsHtml = '';
-            for (const snippet of snippets) {
-                snippetsHtml += `
-                    <div class="snippet-card">
-                        <h3>${escapeHtml(snippet.description)}</h3>
-                        <pre><code>${escapeHtml(snippet.codeContent)}</code></pre>
-                    </div>
-                `;
-            }
-            snippetsContainer.innerHTML = snippetsHtml;
-        } catch (e) {
-            snippetsContainer.innerHTML = `<p class="error">Failed to fetch snippets: ${e.message}</p>`;
-        }
+        // Add event listeners for the new elements
+        document.getElementById('back-button').addEventListener('click', closeDetailView);
+        document.getElementById('save-button').addEventListener('click', saveSnippet);
     };
 
-    const handleAddSnippet = async (event) => {
-        event.preventDefault();
-        const description = document.getElementById('description').value;
-        const code = document.getElementById('code').value;
+    const closeDetailView = () => {
+        detailView.style.display = 'none';
+        mainView.style.display = 'block';
+    };
 
-        if (!description || !code) return;
+    const saveSnippet = async () => {
+        const updatedSnippet = {
+            ...currentSnippet,
+            description: document.getElementById('detail-title').value,
+            fullDescription: document.getElementById('detail-description').value,
+            codeContent: document.getElementById('detail-code').value,
+            lastModificationDate: new Date().toISOString(),
+        };
 
         try {
-            await fetch('/api/snippets/create', {
+            const response = await fetch('/api/snippets/update', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, codeContent: code }),
+                body: JSON.stringify(updatedSnippet),
             });
-            addSnippetForm.reset();
-            fetchSnippets();
-        } catch (e) {
-            alert(`Failed to add snippet: ${e.message}`);
+            if (!response.ok) throw new Error('Save failed!');
+            closeDetailView();
+            fetchData(); // Refresh all data
+        } catch (error) {
+            console.error('Error saving snippet:', error);
+            alert('Could not save snippet.');
         }
     };
 
-    const escapeHtml = (unsafe) => {
-        return unsafe
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+    const fetchData = async () => {
+        try {
+            const [statusRes, snippetsRes] = await Promise.all([ fetch('/status'), fetch('/api/snippets') ]);
+            if (!statusRes.ok || !snippetsRes.ok) throw new Error('Failed to fetch data');
 
-    addSnippetForm.addEventListener('submit', handleAddSnippet);
+            const status = await statusRes.json();
+            snippets = await snippetsRes.json();
+            
+            applyTheme(status);
+            renderSnippets();
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
+    
+    const escapeHtml = (unsafe) => unsafe.replace(/[&<"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
 
-    // Initial data fetch
-    fetchStatus();
-    fetchSnippets();
+    // --- Event Listeners ---
+    snippetsGrid.addEventListener('click', (e) => {
+        const card = e.target.closest('.snippet-card');
+        if (card) {
+            const snippetId = parseInt(card.dataset.id);
+            const snippet = snippets.find(s => s.id === snippetId);
+            if (snippet) openDetailView(snippet);
+        }
+    });
+
+    fab.addEventListener('click', () => { /* TODO: Implement create view */ });
+
+    // --- Initial Load ---
+    fetchData();
 });

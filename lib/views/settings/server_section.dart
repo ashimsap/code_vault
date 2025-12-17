@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:code_vault/providers/api_providers.dart';
+import 'package:code_vault/providers/providers.dart';
 
 class ServerSection extends ConsumerWidget {
   const ServerSection({super.key});

@@ -1,7 +1,7 @@
 import 'package:code_vault/themes/app_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:code_vault/providers/data_providers.dart';
+import 'package:code_vault/providers/providers.dart';
 
 class ThemeSection extends ConsumerWidget {
   const ThemeSection({super.key});
@@ -9,12 +9,11 @@ class ThemeSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final themeMode = ref.watch(themeModeProvider);
-    final activeAccent = ref.watch(accentThemeProvider);
+    final themeSettings = ref.watch(themeProvider);
 
     return Card(
       elevation: 0,
-      color: theme.colorScheme.primary.withOpacity(0.05), // Apply accent color to card background
+      color: theme.colorScheme.primary.withOpacity(0.05),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.1)),
@@ -24,17 +23,16 @@ class ThemeSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Theme', style: theme.textTheme.headlineSmall), // Use default text color
+            Text('Theme', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 16),
-            // --- Light/Dark Mode Toggle ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Current Theme', style: TextStyle(fontSize: 16)),
                 Switch(
-                  value: themeMode == ThemeMode.dark,
+                  value: themeSettings.themeMode == ThemeMode.dark,
                   onChanged: (isDark) {
-                    ref.read(themeModeProvider.notifier).state = isDark ? ThemeMode.dark : ThemeMode.light;
+                    ref.read(themeProvider.notifier).setThemeMode(isDark ? ThemeMode.dark : ThemeMode.light);
                   },
                   thumbIcon: MaterialStateProperty.resolveWith<Icon?>((states) {
                     return Icon(states.contains(MaterialState.selected) ? Icons.dark_mode : Icons.light_mode);
@@ -43,7 +41,6 @@ class ThemeSection extends ConsumerWidget {
               ],
             ),
             const Divider(height: 32),
-            // --- Accent Color Selector ---
             const Text('Accent Color', style: TextStyle(fontSize: 16)),
             const SizedBox(height: 16),
             GridView.builder(
@@ -57,9 +54,9 @@ class ThemeSection extends ConsumerWidget {
               itemCount: accentThemes.length,
               itemBuilder: (context, index) {
                 final accent = accentThemes[index];
-                final bool isActive = accent.name == activeAccent.name;
+                final bool isActive = accent.name == themeSettings.accentTheme.name;
                 return InkWell(
-                  onTap: () => ref.read(accentThemeProvider.notifier).state = accent,
+                  onTap: () => ref.read(themeProvider.notifier).setAccentTheme(accent),
                   child: Container(
                     width: 40,
                     height: 40,

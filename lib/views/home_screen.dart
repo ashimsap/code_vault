@@ -1,5 +1,5 @@
 import 'package:code_vault/models/snippet.dart';
-import 'package:code_vault/providers/data_providers.dart';
+import 'package:code_vault/providers/providers.dart'; // Corrected import path
 import 'package:code_vault/views/snippets/add_snippet_dialog.dart';
 import 'package:code_vault/views/snippets/snippet_card.dart';
 import 'package:code_vault/views/snippets/snippet_detail_view.dart';
@@ -14,7 +14,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  // Store a list of selected snippet IDs
   List<int> _selectedSnippetIds = [];
 
   bool get _isInSelectionMode => _selectedSnippetIds.isNotEmpty;
@@ -91,7 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,
                   mainAxisSpacing: 12,
-                  childAspectRatio: 0.85, // Adjusted for fixed size
+                  childAspectRatio: 0.85,
                 ),
                 itemCount: snippets.length,
                 itemBuilder: (context, index) {

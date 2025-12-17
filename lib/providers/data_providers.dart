@@ -4,19 +4,60 @@ import 'package:code_vault/repositories/snippet_repository.dart';
 import 'package:code_vault/themes/app_themes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // --- THEME PROVIDERS ---
 
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
-final accentThemeProvider = StateProvider<AccentTheme>((ref) => accentThemes[0]);
+// This notifier now manages both theme mode and accent color
+final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeSettings>((ref) {
+  return ThemeNotifier();
+});
 
+class ThemeSettings {
+  final ThemeMode themeMode;
+  final AccentTheme accentTheme;
+
+  ThemeSettings({required this.themeMode, required this.accentTheme});
+}
+
+class ThemeNotifier extends StateNotifier<ThemeSettings> {
+  ThemeNotifier() : super(ThemeSettings(themeMode: ThemeMode.light, accentTheme: accentThemes[0])) {
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    final modeIndex = prefs.getInt('themeMode') ?? 0;
+    final accentIndex = prefs.getInt('accentTheme') ?? 0;
+
+    state = ThemeSettings(
+      themeMode: ThemeMode.values[modeIndex],
+      accentTheme: accentThemes[accentIndex],
+    );
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('themeMode', mode.index);
+    state = ThemeSettings(themeMode: mode, accentTheme: state.accentTheme);
+  }
+
+  Future<void> setAccentTheme(AccentTheme accent) async {
+    final prefs = await SharedPreferences.getInstance();
+    final accentIndex = accentThemes.indexOf(accent);
+    await prefs.setInt('accentTheme', accentIndex);
+    state = ThemeSettings(themeMode: state.themeMode, accentTheme: accent);
+  }
+}
+
+// This provider now intelligently builds the theme based on the ThemeNotifier
 final activeThemeProvider = Provider<ThemeData>((ref) {
-  final mode = ref.watch(themeModeProvider);
-  final accent = ref.watch(accentThemeProvider);
-  final baseTheme = (mode == ThemeMode.light) ? baseLightTheme : baseDarkTheme;
-  final newColorScheme = baseTheme.colorScheme.copyWith(primary: accent.color, secondary: accent.color);
+  final settings = ref.watch(themeProvider);
+  final baseTheme = (settings.themeMode == ThemeMode.light) ? baseLightTheme : baseDarkTheme;
+  final newColorScheme = baseTheme.colorScheme.copyWith(primary: settings.accentTheme.color, secondary: settings.accentTheme.color);
   return baseTheme.copyWith(colorScheme: newColorScheme);
 });
+
 
 // --- SNIPPET PROVIDERS ---
 

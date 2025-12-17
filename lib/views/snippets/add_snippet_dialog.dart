@@ -1,7 +1,6 @@
 import 'package:code_vault/models/snippet.dart';
-import 'package:code_vault/providers/data_providers.dart';
+import 'package:code_vault/providers/providers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AddSnippetDialog extends ConsumerStatefulWidget {
@@ -26,56 +25,67 @@ class _AddSnippetDialogState extends ConsumerState<AddSnippetDialog> {
     super.dispose();
   }
 
-  void _addSnippet() {
+  // The function is now async to handle the database operation properly.
+  Future<void> _createSnippet() async {
     if (_controller.text.isEmpty) return;
 
     final newSnippet = Snippet(
-      description: _controller.text,
-      codeContent: '// Add your code here',
-      mediaPaths: [],
+      description: _controller.text, // The initial title
+      fullDescription: '', // Initialize with blank description
+      codeContent: '', // Blank code content
+      mediaPaths: [], // No media initially
       categories: [],
       creationDate: DateTime.now(),
       lastModificationDate: DateTime.now(),
       deviceSource: 'Phone',
     );
 
-    ref.read(snippetListProvider.notifier).addSnippet(newSnippet);
-    Navigator.of(context).pop(); // Close dialog
-  }
+    try {
+      // We now await the result of the add operation.
+      await ref.read(snippetListProvider.notifier).addSnippet(newSnippet);
 
-  Future<void> _pasteFromClipboard() async {
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    final text = clipboardData?.text;
-    if (text != null) {
-      _controller.text = text;
+      // Only pop the dialog if the widget is still mounted and saving was successful.
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      // If an error occurs, show it to the user.
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create snippet: $e')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return AlertDialog(
-      title: const Text('Create New Snippet'),
+      backgroundColor: theme.cardColor, // Use theme's card color
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text('Create New Snippet', style: TextStyle(color: theme.colorScheme.onSurface)),
       content: TextField(
         controller: _controller,
         autofocus: true,
-        decoration: InputDecoration(
-          labelText: 'Description or code...',
-          border: const OutlineInputBorder(),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.paste),
-            onPressed: _pasteFromClipboard,
-            tooltip: 'Paste from Clipboard',
-          ),
+        decoration: const InputDecoration(
+          labelText: 'Title...',
+          border: OutlineInputBorder(),
         ),
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(), // Cancel
+          onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: _addSnippet, // Add
-          child: const Text('Add'),
+          onPressed: _createSnippet,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorScheme.primary,
+            foregroundColor: theme.colorScheme.onPrimary,
+          ),
+          child: const Text('Create'),
         ),
       ],
     );
