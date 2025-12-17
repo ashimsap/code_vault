@@ -1,30 +1,107 @@
+:root {
+    --accent-color: #5892E5; /* Default blue */
+
+    /* Light Theme Colors */
+    --bg-light: #f0f2f5;
+    --card-light: #ffffff;
+    --text-light: #1c1e21;
+    --text-muted-light: #65676b;
+
+    /* Dark Theme Colors */
+    --bg-dark: #36393e;
+    --card-dark: #40444b;
+    --text-dark: #dcddde;
+    --text-muted-dark: #72767d;
+
+    /* Default to light theme */
+    --bg-color: var(--bg-light);
+    --card-color: var(--card-light);
+    --text-color: var(--text-light);
+    --text-muted-color: var(--text-muted-light);
+}
+
 body {
-    font-family: sans-serif;
-    margin: 2em;
-    background-color: #f4f4f4;
-    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 24px;
+    transition: background-color 0.3s, color 0.3s;
 }
 
-h1 {
+body.dark-mode {
+    --bg-color: var(--bg-dark);
+    --card-color: var(--card-dark);
+    --text-color: var(--text-dark);
+    --text-muted-color: var(--text-muted-dark);
+}
+
+h1, h2 {
     text-align: center;
+    color: var(--text-color);
 }
 
-#status-container {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    padding: 2em;
+#status-container, .snippet-card, #add-snippet-form {
+    background-color: var(--card-color);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 8px;
-    max-width: 600px;
-    margin: 2em auto;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 16px;
+    max-width: 800px;
+    margin: 16px auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s;
 }
 
-.success {
-    color: #28a745;
-    font-weight: bold;
+body.dark-mode #status-container, 
+body.dark-mode .snippet-card, 
+body.dark-mode #add-snippet-form {
+    border-color: rgba(255, 255, 255, 0.1);
 }
 
-.error {
-    color: #dc3545;
-    font-weight: bold;
+#snippets-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    max-width: 800px;
+    margin: 16px auto;
 }
+
+.snippet-card h3 {
+    margin-top: 0;
+    color: var(--accent-color);
+}
+
+.snippet-card pre {
+    background-color: var(--bg-color);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    padding: 12px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    color: var(--text-muted-color);
+}
+
+#add-snippet-form textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    box-sizing: border-box; /* Important */
+}
+
+#add-snippet-form button {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1em;
+}
+
+.success { color: #31a24c; font-weight: bold; }
+.error { color: #fa383e; font-weight: bold; }

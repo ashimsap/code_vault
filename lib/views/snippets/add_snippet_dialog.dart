@@ -1,5 +1,5 @@
 import 'package:code_vault/models/snippet.dart';
-import 'package:code_vault/providers/providers.dart';
+import 'package:code_vault/providers/data_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,11 +44,8 @@ class _AddSnippetDialogState extends ConsumerState<AddSnippetDialog> {
   }
 
   Future<void> _pasteFromClipboard() async {
-    // Safely get clipboard data
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
     final text = clipboardData?.text;
-
-    // Only update if there is text on the clipboard
     if (text != null) {
       _controller.text = text;
     }

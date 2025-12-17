@@ -3,14 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Code Vault - Status</title>
+    <title>Code Vault</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Server Status</h1>
-    <div id="status-container">
-        <p>Loading status...</p>
+    <h1>Code Vault</h1>
+    <div id="status-container"></div>
+    <hr>
+    
+    <h2>Add New Snippet</h2>
+    <form id="add-snippet-form">
+        <textarea id="description" placeholder="Description..." required></textarea>
+        <textarea id="code" placeholder="Code..." required></textarea>
+        <button type="submit">Add Snippet</button>
+    </form>
+
+    <h2>Snippets</h2>
+    <div id="snippets-container">
+        <p>Loading snippets...</p>
     </div>
+
     <script src="app.js"></script>
 </body>
 </html>
