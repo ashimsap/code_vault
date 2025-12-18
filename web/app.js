@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (DOM elements are the same)
     const mainView = document.getElementById('main-view');
     const detailView = document.getElementById('detail-view');
     const snippetsGrid = document.getElementById('snippets-grid');
@@ -10,7 +9,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let saveDebounceTimer;
     let keepAliveTimer;
 
-    // ... (main, checkStatus, startKeepAlive, handleRouting are the same)
     const main = async () => {
         try {
             const status = await checkStatus();
@@ -38,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hash.startsWith('#snippet/')) {
             const id = hash.substring(9);
             if (id === 'new') {
-                openDetailView(null); 
+                openDetailView(null);
             } else {
                 const snippet = snippets.find(s => s.id === parseInt(id));
                 snippet ? openDetailView(snippet) : showMainView();
@@ -77,10 +75,16 @@ document.addEventListener('DOMContentLoaded', () => {
         detailView.innerHTML = `
             <div class="detail-header"><button class="back-button">&larr;</button></div>
             <div class="detail-body">
-                <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}">
-                <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
-                <label id="media-upload-label" for="media-upload" class="detail-media-box">${mediaContent}</label>
-                <input type="file" id="media-upload" style="display:none;" accept="image/*">
+                <div class="detail-top-section">
+                    <div class="detail-meta-content">
+                        <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}">
+                        <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
+                    </div>
+                    <div class="detail-media-box">
+                        <label id="media-upload-label" for="media-upload">${mediaContent}</label>
+                        <input type="file" id="media-upload" style="display:none;" accept="image/*">
+                    </div>
+                </div>
                 <div class="code-editor-wrapper">
                     <div id="line-numbers" class="line-numbers">1</div>
                     <textarea id="detail-code" class="code-editor" placeholder="Code..." spellcheck="false">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
@@ -112,18 +116,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showMainView = async () => {
-        if (currentSnippet && (currentSnippet.description || currentSnippet.fullDescription || currentSnippet.codeContent)) {
+        if (currentSnippet) {
             await saveSnippet();
         }
         currentSnippet = null;
-
         detailView.style.display = 'none';
         mainView.style.display = 'block';
         if (window.location.hash) window.history.pushState("", document.title, window.location.pathname + window.location.search);
         fetchData();
     };
 
-    // ... (saveSnippet, uploadMedia, applyTheme, escapeHtml, and other event listeners are the same)
     const handleAutoSave = () => {
         clearTimeout(saveDebounceTimer);
         saveDebounceTimer = setTimeout(saveSnippet, 1500);
@@ -154,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchData(); 
                 currentSnippet = snippets.find(s => s.id === newSnippet.id);
             }
-            console.log(`Snippet ${isCreating ? 'created' : 'auto-saved'}.`);
         } catch (error) {
             console.error('Error saving snippet:', error);
         }
@@ -162,7 +163,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const uploadMedia = async (event) => {
         const file = event.target.files[0];
-        if (!file || !currentSnippet.id) return;
+        if (!file || !currentSnippet.id) {
+            console.log('Cannot upload media without a saved snippet. Save the snippet first.');
+            return;
+        }
 
         const formData = new FormData();
         formData.append('media', file);

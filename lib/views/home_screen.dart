@@ -1,4 +1,3 @@
-import 'package:code_vault/models/snippet.dart';
 import 'package:code_vault/providers/providers.dart'; // Corrected import path
 import 'package:code_vault/views/snippets/add_snippet_dialog.dart';
 import 'package:code_vault/views/snippets/snippet_card.dart';

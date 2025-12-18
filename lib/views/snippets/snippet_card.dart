@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:code_vault/models/snippet.dart';
-import 'package:code_vault/providers/providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';

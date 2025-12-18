@@ -34,8 +34,8 @@ class ThemeSection extends ConsumerWidget {
                   onChanged: (isDark) {
                     ref.read(themeProvider.notifier).setThemeMode(isDark ? ThemeMode.dark : ThemeMode.light);
                   },
-                  thumbIcon: MaterialStateProperty.resolveWith<Icon?>((states) {
-                    return Icon(states.contains(MaterialState.selected) ? Icons.dark_mode : Icons.light_mode);
+                  thumbIcon: WidgetStateProperty.resolveWith<Icon?>((states) {
+                    return Icon(states.contains(WidgetState.selected) ? Icons.dark_mode : Icons.light_mode);
                   }),
                 ),
               ],

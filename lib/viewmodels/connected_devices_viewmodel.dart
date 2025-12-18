@@ -3,6 +3,7 @@ import 'package:code_vault/models/connected_device.dart';
 import 'package:code_vault/repositories/device_repository.dart';
 import 'package:code_vault/services/notification_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 final deviceRepositoryProvider = Provider((_) => DeviceRepository());
 

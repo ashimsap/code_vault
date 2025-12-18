@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:code_vault/views/home_screen.dart';
 import 'package:code_vault/views/settings_view.dart';
+import 'package:flutter_riverpod/legacy.dart';
 
 // A provider to hold the current selected tab index
 final selectedIndexProvider = StateProvider<int>((ref) => 0);
