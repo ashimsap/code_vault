@@ -1,21 +1,41 @@
+import 'dart:async';
 import 'package:code_vault/models/connected_device.dart';
 import 'package:code_vault/viewmodels/connected_devices_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:code_vault/providers/providers.dart';
 
-class ConnectedDevicesSection extends ConsumerWidget {
+class ConnectedDevicesSection extends ConsumerStatefulWidget {
   const ConnectedDevicesSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final isServerRunning = ref.watch(serverRunningProvider);
-    final devices = ref.watch(connectedDevicesProvider);
+  ConsumerState<ConnectedDevicesSection> createState() => _ConnectedDevicesSectionState();
+}
 
-    if (!isServerRunning) {
-      return const SizedBox.shrink();
-    }
+class _ConnectedDevicesSectionState extends ConsumerState<ConnectedDevicesSection> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Refresh the UI every 5 seconds to update the online/offline indicators
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // We keep watching serverRunningProvider to know if we *can* be online,
+    // but we no longer hide the section if it's false.
+    final devices = ref.watch(connectedDevicesProvider);
 
     return Card(
       elevation: 0,
@@ -29,12 +49,12 @@ class ConnectedDevicesSection extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Connected Devices', style: theme.textTheme.headlineSmall),
+            Text('Devices', style: theme.textTheme.headlineSmall),
             const SizedBox(height: 16),
             if (devices.isEmpty)
               const Center(child: Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text('Waiting for connections...'),
+                child: Text('No known devices.'),
               ))
             else
               ListView.separated(
@@ -62,6 +82,12 @@ class _DeviceListItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(connectedDevicesProvider.notifier);
+    final isServerRunning = ref.watch(serverRunningProvider);
+
+    // Determine if the device is currently "online"
+    // We consider it online if the server is running AND it was seen in the last 45 seconds.
+    final isOnline = isServerRunning && 
+        DateTime.now().difference(device.lastSeen).inSeconds < 45;
     
     // Safely get the color for each status
     final statusInfo = {
@@ -74,6 +100,22 @@ class _DeviceListItem extends ConsumerWidget {
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
+      leading: Tooltip(
+        message: isOnline ? 'Online' : 'Offline',
+        child: Container(
+          width: 8,
+          height: 8,
+          margin: const EdgeInsets.only(top: 6), // Align slightly with text
+          decoration: BoxDecoration(
+            color: isOnline ? Colors.greenAccent : Colors.redAccent,
+            shape: BoxShape.circle,
+            boxShadow: [
+              if (isOnline)
+                BoxShadow(color: Colors.greenAccent.withOpacity(0.5), blurRadius: 4, spreadRadius: 1)
+            ],
+          ),
+        ),
+      ),
       title: Text(device.ipAddress),
       subtitle: Text(
         statusInfo.$2,
