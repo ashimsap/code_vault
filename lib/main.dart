@@ -1,10 +1,17 @@
+import 'package:code_vault/services/notification_service.dart';
 import 'package:code_vault/views/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:code_vault/providers/data_providers.dart';
+import 'package:code_vault/providers/providers.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize the notification service
+  final notificationService = NotificationService();
+  await notificationService.init();
+  // **THE FIX: Request permission on startup**
+  await notificationService.requestPermissions();
+
   runApp(const ProviderScope(child: MyApp()));
 }
 

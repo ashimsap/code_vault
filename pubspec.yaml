@@ -23,6 +23,7 @@ dependencies:
   video_player: ^2.8.6
   shared_preferences: ^2.2.3
   image: ^4.2.0
+  flutter_local_notifications: ^17.1.2
   cupertino_icons: ^1.0.8
 
 dev_dependencies:

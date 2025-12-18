@@ -8,15 +8,17 @@ class SettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
-      children: const [
-        ThemeSection(),
-        SizedBox(height: 24),
-        ServerSection(),
-        SizedBox(height: 24),
-        ConnectedDevicesSection(),
-      ],
+    return SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: const [
+          ServerSection(),
+          SizedBox(height: 24),
+          ConnectedDevicesSection(),
+          ThemeSection(),
+          SizedBox(height: 24),
+        ],
+      ),
     );
   }
 }

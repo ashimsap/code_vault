@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:code_vault/http_server.dart';
 import 'package:code_vault/services/api_service.dart';
-import 'package:flutter/foundation.dart'; // For FlutterError
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mime/mime.dart';
@@ -28,12 +28,12 @@ final serverHandlerProvider = Provider<Handler>((ref) {
   final apiService = ref.read(apiServiceProvider);
 
   return (Request request) async {
-    ref.read(httpServerProvider).handleRequest(request);
+    // The handleRequest call is removed as this logic is now in ApiService
 
     final path = request.url.path.trim().replaceAll(RegExp(r'^/|/$'), '');
 
-    // Check for API routes first
-    if (path.startsWith('api/') || path == 'status' || path == 'hello') {
+    // Check for API routes first (this now includes client registration)
+    if (path.startsWith('api/') || path == 'status' || path.startsWith('media/')) {
       return await apiService.handleApiRequest(request);
     }
 
@@ -48,9 +48,7 @@ final serverHandlerProvider = Provider<Handler>((ref) {
   };
 });
 
-final clientUpdatesProvider = StreamProvider<List<String>>((ref) {
-  return ref.watch(httpServerProvider).clientUpdates;
-});
+// The clientUpdatesProvider is removed as it is obsolete.
 
 final serverRunningProvider = StateNotifierProvider<ServerRunningNotifier, bool>((ref) {
   return ServerRunningNotifier(ref);

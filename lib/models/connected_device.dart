@@ -1,4 +1,4 @@
-enum AccessStatus { allowed, tempBlocked, banned }
+enum AccessStatus { pending, allowed, tempAllowed, tempBlocked, banned }
 
 class ConnectedDevice {
   final String ipAddress;
@@ -7,7 +7,7 @@ class ConnectedDevice {
 
   ConnectedDevice({
     required this.ipAddress,
-    this.status = AccessStatus.allowed,
+    this.status = AccessStatus.pending, // New devices start as pending
     required this.lastSeen,
   });
 
