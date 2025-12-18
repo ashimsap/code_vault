@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchData();
             handleRouting();
         } catch (error) {
-            document.body.innerHTML = `<div class="permission-denied"><h1>Paila Dai Lai Sodh</h1><p>(First, ask for permission from the host app)</p></div>`;
+            document.body.innerHTML = `<div class="permission-denied"><h1>Paila Dai Lai Sodh</h1><p>(Ask permission from the Host.)</p></div>`;
         }
     };
 
@@ -31,15 +31,19 @@ document.addEventListener('DOMContentLoaded', () => {
         keepAliveTimer = setInterval(checkStatus, 15000);
     };
 
-    const handleRouting = () => {
+    const handleRouting = async () => {
         const hash = window.location.hash;
         if (hash.startsWith('#snippet/')) {
             const id = hash.substring(9);
             if (id === 'new') {
-                openDetailView(null);
+                await openDetailView(null);
             } else {
                 const snippet = snippets.find(s => s.id === parseInt(id));
-                snippet ? openDetailView(snippet) : showMainView();
+                if (snippet) {
+                    await openDetailView(snippet);
+                } else {
+                    showMainView();
+                }
             }
         } else {
             showMainView();
@@ -59,15 +63,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const renderSnippetsGrid = () => {
         snippetsGrid.innerHTML = snippets.map(snippet => {
-            const mediaContent = snippet.firstMediaUrl
-                ? `<img src="${snippet.firstMediaUrl}" alt="Snippet Media">`
-                : `<pre><code>${escapeHtml(snippet.codeContent)}</code></pre>`;
-            return `<div class="snippet-card" data-id="${snippet.id}">${mediaContent}</div>`;
+            let bodyContent = '';
+            
+            if (snippet.firstMediaUrl) {
+                bodyContent = `<div class="card-media"><img src="${snippet.firstMediaUrl}" alt="Media"></div>`;
+            } else {
+                // If no media, only show description
+                const descriptionHtml = snippet.fullDescription 
+                    ? `<div class="card-description">${escapeHtml(snippet.fullDescription)}</div>` 
+                    : '';
+                // Code is intentionally hidden in the card preview
+                bodyContent = `<div class="card-text-body">${descriptionHtml}</div>`;
+            }
+            
+            return `
+                <div class="snippet-card" data-id="${snippet.id}">
+                    <div class="card-header">
+                        <div class="card-title">${escapeHtml(snippet.description)}</div>
+                    </div>
+                    ${bodyContent}
+                </div>
+            `;
         }).join('');
     };
 
-    const openDetailView = (snippet) => {
-        currentSnippet = snippet || { description: 'New Snippet', fullDescription: '', codeContent: '', mediaPaths: [] };
+    const createNewSnippet = async () => {
+        const newSnippetData = {
+            description: '', // Initial value is empty for auto-delete check
+            fullDescription: '',
+            codeContent: '',
+            mediaPaths: [],
+            creationDate: new Date().toISOString(),
+            lastModificationDate: new Date().toISOString(),
+            categories: '',
+            deviceSource: 'Web Client'
+        };
+        try {
+            const response = await fetch('/api/snippets/create', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(newSnippetData) 
+            });
+            if (!response.ok) throw new Error('Create failed!');
+            return await response.json();
+        } catch (error) {
+            console.error('Error creating new snippet:', error);
+            return null;
+        }
+    };
+
+    const openDetailView = async (snippet) => {
+        if (!snippet) {
+            snippet = await createNewSnippet();
+            if (!snippet) {
+                alert('Failed to create new snippet');
+                showMainView();
+                return;
+            }
+            history.replaceState(null, '', `#snippet/${snippet.id}`);
+            await fetchData();
+        }
+
+        currentSnippet = snippet;
+        
         const mediaContent = currentSnippet.firstMediaUrl 
             ? `<img src="${currentSnippet.firstMediaUrl}" alt="Snippet Media">`
             : 'Click to Add Media';
@@ -77,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="detail-body">
                 <div class="detail-top-section">
                     <div class="detail-meta-content">
-                        <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}">
+                        <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}" placeholder="Title...">
                         <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
                     </div>
                     <div class="detail-media-box">
@@ -116,9 +174,28 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showMainView = async () => {
-        if (currentSnippet) {
-            await saveSnippet();
+        // Auto-delete empty snippets on backing out
+        if (currentSnippet && currentSnippet.id) {
+            // First, ensure the final state is captured from the UI
+            const finalDescription = document.getElementById('detail-title').value;
+            const finalFullDescription = document.getElementById('detail-description').value;
+            const finalCodeContent = document.getElementById('detail-code').value;
+
+            // Updated check: consider empty if description/title is empty, even if media exists?
+            // User requirement: "auto delete the snippet if the contents are blank like no title nodescription no media and no code"
+            const isUnedited = 
+                !finalDescription && 
+                !finalFullDescription && 
+                !finalCodeContent && 
+                (!currentSnippet.mediaPaths || currentSnippet.mediaPaths.length === 0);
+
+            if (isUnedited) {
+                await fetch(`/api/snippets/delete?id=${currentSnippet.id}`, { method: 'POST' });
+            } else {
+                await saveSnippet(); // Save any last minute changes
+            }
         }
+
         currentSnippet = null;
         detailView.style.display = 'none';
         mainView.style.display = 'block';
@@ -133,8 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const saveSnippet = async () => {
         if (!currentSnippet) return;
-        const isCreating = !currentSnippet.id;
-        const endpoint = isCreating ? '/api/snippets/create' : '/api/snippets/update';
+        const endpoint = '/api/snippets/update';
         
         let snippetData = {
             ...currentSnippet,
@@ -144,18 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
             lastModificationDate: new Date().toISOString(),
             categories: (currentSnippet.categories || []).join(','),
         };
-        if(isCreating) snippetData.creationDate = new Date().toISOString();
 
         try {
             const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snippetData) });
             if (!response.ok) throw new Error('Save failed!');
-            
-            if(isCreating) {
-                const newSnippet = await response.json();
-                history.replaceState(null, '', `#snippet/${newSnippet.id}`);
-                await fetchData(); 
-                currentSnippet = snippets.find(s => s.id === newSnippet.id);
-            }
         } catch (error) {
             console.error('Error saving snippet:', error);
         }
@@ -164,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadMedia = async (event) => {
         const file = event.target.files[0];
         if (!file || !currentSnippet.id) {
-            console.log('Cannot upload media without a saved snippet. Save the snippet first.');
+            alert("Error: Snippet not saved on server yet. Please wait or try again.");
             return;
         }
 
@@ -176,14 +244,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) throw new Error('Upload failed!');
             const updatedSnippet = await response.json();
             currentSnippet = updatedSnippet;
-            openDetailView(updatedSnippet);
+            const mediaContent = currentSnippet.firstMediaUrl 
+                ? `<img src="${currentSnippet.firstMediaUrl}" alt="Snippet Media">`
+                : 'Click to Add Media';
+            document.getElementById('media-upload-label').innerHTML = mediaContent;
+            
         } catch(error) {
             console.error('Error uploading media:', error);
+            alert("Media upload failed.");
         }
     };
 
     const applyTheme = (theme) => {
         document.documentElement.style.setProperty('--accent-color', theme.accentColor);
+        // Set RGB for RGBA fallback
+        const hex = theme.accentColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        document.documentElement.style.setProperty('--accent-color-rgb', `${r}, ${g}, ${b}`);
+
         document.body.classList.toggle('dark-mode', theme.themeMode === 'dark');
     };
 

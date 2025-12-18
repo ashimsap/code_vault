@@ -55,7 +55,7 @@ class _SnippetCardState extends ConsumerState<SnippetCard> {
       child: Stack(
         children: [
           SizedBox.expand(
-            child: mediaPath != null ? _buildMediaView(mediaPath) : _buildTextView(theme),
+            child: mediaPath != null ? _buildMediaView(mediaPath, theme) : _buildTextView(theme),
           ),
           if (widget.isSelected)
             Container(
@@ -67,21 +67,48 @@ class _SnippetCardState extends ConsumerState<SnippetCard> {
     );
   }
 
-  Widget _buildMediaView(String mediaPath) {
+  Widget _buildMediaView(String mediaPath, ThemeData theme) {
+    final textColor = theme.colorScheme.onSurface.withOpacity(0.9);
+    
+    Widget mediaWidget;
     if (_videoController != null && _videoController!.value.isInitialized) {
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: _videoController!.value.size.width,
-          height: _videoController!.value.size.height,
+      mediaWidget = Center(
+        child: AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
           child: VideoPlayer(_videoController!),
         ),
       );
+    } else if (mediaPath.endsWith('.jpg') || mediaPath.endsWith('.png') || mediaPath.endsWith('.gif')) {
+      mediaWidget = Image.file(File(mediaPath), fit: BoxFit.contain);
+    } else {
+      return _buildTextView(theme); // Fallback
     }
-    if (mediaPath.endsWith('.jpg') || mediaPath.endsWith('.png') || mediaPath.endsWith('.gif')) {
-      return Image.file(File(mediaPath), fit: BoxFit.cover);
-    }
-    return _buildTextView(Theme.of(context)); // Fallback
+
+    return Container(
+      color: theme.colorScheme.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Title above the media
+          Container(
+            padding: const EdgeInsets.all(12.0),
+            color: theme.colorScheme.primary.withOpacity(0.1),
+            child: Text(
+              widget.snippet.description,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Expanded(
+            child: Container(
+              color: Colors.black, // Background for media to look better when fitting
+              child: mediaWidget,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTextView(ThemeData theme) {
@@ -103,6 +130,12 @@ class _SnippetCardState extends ConsumerState<SnippetCard> {
             child: Text(
               widget.snippet.fullDescription,
               style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: textColor.withOpacity(0.7)),
+              // Removed default maxLines/ellipsis implicit behavior or explicit limitations
+              // Using fade to allow it to fill as much as possible without awkward ellipsis if it's tight
+              // But standard ellipsis at the end of the container is better.
+              // The issue "only one line" usually implies maxLines: 1 was inferred or space was tiny.
+              // Setting maxLines to a high number ensures wrapping.
+              maxLines: 20, 
               overflow: TextOverflow.ellipsis,
             ),
           ),

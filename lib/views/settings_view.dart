@@ -13,8 +13,8 @@ class SettingsView extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         children: const [
           ServerSection(),
-          SizedBox(height: 24),
           ConnectedDevicesSection(),
+          SizedBox(height: 24),
           ThemeSection(),
           SizedBox(height: 24),
         ],

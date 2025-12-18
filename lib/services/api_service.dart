@@ -53,6 +53,7 @@ class ApiService {
     if (request.method == 'POST') {
       if (path == 'api/snippets/create') return await _createSnippet(request);
       if (path == 'api/snippets/update') return await _updateSnippet(request);
+      if (path == 'api/snippets/delete') return await _deleteSnippet(request); // Add delete handler
     }
 
     return Response.notFound('API endpoint not found');
@@ -105,6 +106,16 @@ class ApiService {
     return Response.ok(jsonEncode({'status': 'success'}));
   }
 
+  Future<Response> _deleteSnippet(Request request) async {
+    final idStr = request.url.queryParameters['id'];
+    if (idStr == null) return Response.badRequest(body: 'Missing id');
+    final id = int.tryParse(idStr);
+    if (id == null) return Response.badRequest(body: 'Invalid id');
+
+    await _ref.read(snippetListProvider.notifier).deleteSnippet(id);
+    return Response.ok(jsonEncode({'status': 'success'}));
+  }
+
   Future<Response> _uploadMedia(Request request) async {
     final snippetId = int.tryParse(request.url.queryParameters['snippetId'] ?? '');
     if (snippetId == null) return Response.badRequest(body: 'Missing snippetId');
@@ -130,7 +141,8 @@ class ApiService {
     final image = img.decodeImage(Uint8List.fromList(imageBytes));
     if (image == null) return Response.badRequest(body: 'Invalid image data');
 
-    final resizedImage = img.copyResize(image, width: 720);
+    // Resize to 480p width as requested to fix freezing issues
+    final resizedImage = img.copyResize(image, width: 480);
     final appDir = await getApplicationDocumentsDirectory();
     final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
     final savedImagePath = p.join(appDir.path, fileName);
