@@ -1,31 +1,46 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- DOM Elements ---
     const mainView = document.getElementById('main-view');
     const detailView = document.getElementById('detail-view');
     const snippetsGrid = document.getElementById('snippets-grid');
     const fab = document.getElementById('fab');
 
     let snippets = [];
+    let currentSnippet = null;
     let saveDebounceTimer;
+    let keepAliveTimer;
 
     // --- Main App Logic ---
-
-    // Fetches initial data and sets up the view based on the URL
     const main = async () => {
-        await fetchData();
-        handleRouting();
+        try {
+            const status = await checkStatus();
+            applyTheme(status);
+            startKeepAlive();
+            await fetchData();
+            handleRouting();
+        } catch (error) {
+            document.body.innerHTML = `<div class="permission-denied"><h1>Paila Dai Lai Sodh</h1><p>(First, ask for permission from the host app)</p></div>`;
+        }
     };
 
-    // Renders the correct view based on the URL hash
+    const checkStatus = async () => {
+        const response = await fetch('/status');
+        if (!response.ok) throw new Error('Permission Denied');
+        return response.json();
+    };
+
+    const startKeepAlive = () => {
+        keepAliveTimer = setInterval(checkStatus, 15000);
+    };
+
     const handleRouting = () => {
         const hash = window.location.hash;
         if (hash.startsWith('#snippet/')) {
-            const snippetId = parseInt(hash.substring(9));
-            const snippet = snippets.find(s => s.id === snippetId);
-            if (snippet) {
-                openDetailView(snippet);
+            const id = hash.substring(9);
+            if (id === 'new') {
+                openDetailView(null); // Open blank editor for new snippet
             } else {
-                showMainView(); // Snippet not found, show main grid
+                const snippet = snippets.find(s => s.id === parseInt(id));
+                snippet ? openDetailView(snippet) : showMainView();
             }
         } else {
             showMainView();
@@ -35,13 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Data Fetching ---
     const fetchData = async () => {
         try {
-            const [statusRes, snippetsRes] = await Promise.all([fetch('/status'), fetch('/api/snippets')]);
-            if (!statusRes.ok || !snippetsRes.ok) throw new Error('Failed to fetch data');
-
-            const status = await statusRes.json();
+            const snippetsRes = await fetch('/api/snippets');
+            if (!snippetsRes.ok) throw new Error('Failed to fetch snippets');
             snippets = await snippetsRes.json();
-            
-            applyTheme(status);
             renderSnippetsGrid();
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -54,48 +65,59 @@ document.addEventListener('DOMContentLoaded', () => {
             const mediaContent = snippet.firstMediaUrl
                 ? `<img src="${snippet.firstMediaUrl}" alt="Snippet Media">`
                 : `<pre><code>${escapeHtml(snippet.codeContent)}</code></pre>`;
-            return `
-                <div class="snippet-card" data-id="${snippet.id}">
-                    <h3>${escapeHtml(snippet.description)}</h3>
-                    <div class="media-preview">${mediaContent}</div>
-                </div>
-            `;
+            return `<div class="snippet-card" data-id="${snippet.id}">${mediaContent}</div>`;
         }).join('');
     };
 
     const openDetailView = (snippet) => {
-        currentSnippet = snippet;
-        const mediaContent = snippet.firstMediaUrl 
-            ? `<img src="${snippet.firstMediaUrl}" alt="Snippet Media">`
-            : 'Add Media';
+        currentSnippet = snippet || { description: 'New Snippet', fullDescription: '', codeContent: '', mediaPaths: [] };
+        const mediaContent = currentSnippet.firstMediaUrl 
+            ? `<img src="${currentSnippet.firstMediaUrl}" alt="Snippet Media">`
+            : 'Click to Add Media';
 
         detailView.innerHTML = `
-            <div class="detail-header">
-                <button class="back-button">&larr;</button>
-                <input type="text" class="detail-header-title" id="detail-title" value="${escapeHtml(snippet.description)}">
-            </div>
+            <div class="detail-header"><button class="back-button">&larr;</button></div>
             <div class="detail-body">
+                <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}">
                 <div class="detail-meta-section">
-                    <textarea id="detail-description" placeholder="Description...">${escapeHtml(snippet.fullDescription || '')}</textarea>
-                    <div class="detail-media-box">${mediaContent}</div>
+                    <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
+                    <label id="media-upload-label" for="media-upload" class="detail-media-box">${mediaContent}</label>
+                    <input type="file" id="media-upload" style="display:none;" accept="image/*">
                 </div>
-                <textarea id="detail-code" class="code-editor" placeholder="Code...">${escapeHtml(snippet.codeContent || '')}</textarea>
+                <div class="code-editor-wrapper">
+                    <div id="line-numbers" class="line-numbers">1</div>
+                    <textarea id="detail-code" class="code-editor" placeholder="Code...">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
+                </div>
             </div>
         `;
         mainView.style.display = 'none';
         detailView.style.display = 'flex';
 
-        // Add event listeners for the new elements
+        const codeEditor = document.getElementById('detail-code');
+        const lineNumbers = document.getElementById('line-numbers');
+        const updateLineNumbers = () => {
+            const lines = codeEditor.value.split('\n').length || 1;
+            lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+        };
+        codeEditor.addEventListener('input', updateLineNumbers);
+        updateLineNumbers();
+
         document.querySelector('.back-button').addEventListener('click', () => window.history.back());
         ['detail-title', 'detail-description', 'detail-code'].forEach(id => {
             document.getElementById(id).addEventListener('input', handleAutoSave);
         });
+        document.getElementById('media-upload').addEventListener('change', uploadMedia);
     };
 
-    const showMainView = () => {
+    const showMainView = async () => {
+        // **THE FIX for saving data**
+        if (currentSnippet) await saveSnippet(); // Ensure last changes are saved before leaving
+        currentSnippet = null;
+
         detailView.style.display = 'none';
         mainView.style.display = 'block';
-        window.location.hash = '';
+        if (window.location.hash) window.history.pushState("", document.title, window.location.pathname + window.location.search);
+        fetchData(); // Refresh grid view
     };
 
     // --- Actions ---
@@ -105,7 +127,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const saveSnippet = async () => {
-        const updatedSnippet = {
+        if (!currentSnippet) return;
+        const isCreating = !currentSnippet.id;
+        const endpoint = isCreating ? '/api/snippets/create' : '/api/snippets/update';
+        
+        let snippetData = {
             ...currentSnippet,
             description: document.getElementById('detail-title').value,
             fullDescription: document.getElementById('detail-description').value,
@@ -113,16 +139,39 @@ document.addEventListener('DOMContentLoaded', () => {
             lastModificationDate: new Date().toISOString(),
             categories: (currentSnippet.categories || []).join(','),
         };
+        if(isCreating) snippetData.creationDate = new Date().toISOString();
 
         try {
-            await fetch('/api/snippets/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedSnippet),
-            });
-            console.log('Snippet auto-saved.');
+            const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(snippetData) });
+            if (!response.ok) throw new Error('Save failed!');
+            
+            if(isCreating) {
+                const newSnippet = await response.json();
+                history.replaceState(null, '', `#snippet/${newSnippet.id}`);
+                await fetchData(); 
+                currentSnippet = snippets.find(s => s.id === newSnippet.id);
+            }
+            console.log(`Snippet ${isCreating ? 'created' : 'auto-saved'}.`);
         } catch (error) {
-            console.error('Error auto-saving snippet:', error);
+            console.error('Error saving snippet:', error);
+        }
+    };
+
+    const uploadMedia = async (event) => {
+        const file = event.target.files[0];
+        if (!file || !currentSnippet.id) return;
+
+        const formData = new FormData();
+        formData.append('media', file);
+
+        try {
+            const response = await fetch(`/api/media/upload?snippetId=${currentSnippet.id}`, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error('Upload failed!');
+            const updatedSnippet = await response.json();
+            currentSnippet = updatedSnippet;
+            openDetailView(updatedSnippet);
+        } catch(error) {
+            console.error('Error uploading media:', error);
         }
     };
 
@@ -136,15 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Event Listeners ---
     snippetsGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.snippet-card');
-        if (card) {
-            const snippetId = parseInt(card.dataset.id);
-            window.location.hash = `#snippet/${snippetId}`;
-        }
+        if (card) window.location.hash = `#snippet/${card.dataset.id}`;
     });
     
     window.addEventListener('popstate', handleRouting);
 
-    fab.addEventListener('click', () => { /* TODO: Implement create view */ });
+    fab.addEventListener('click', () => window.location.hash = '#snippet/new');
 
     // --- Initial Load ---
     main();

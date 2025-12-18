@@ -18,7 +18,6 @@ class _ConnectedDevicesSectionState extends ConsumerState<ConnectedDevicesSectio
   @override
   void initState() {
     super.initState();
-    // Refresh the UI every 5 seconds to update the online/offline indicators
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) setState(() {});
     });
@@ -33,8 +32,6 @@ class _ConnectedDevicesSectionState extends ConsumerState<ConnectedDevicesSectio
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // We keep watching serverRunningProvider to know if we *can* be online,
-    // but we no longer hide the section if it's false.
     final devices = ref.watch(connectedDevicesProvider);
 
     return Card(
@@ -84,12 +81,9 @@ class _DeviceListItem extends ConsumerWidget {
     final notifier = ref.read(connectedDevicesProvider.notifier);
     final isServerRunning = ref.watch(serverRunningProvider);
 
-    // Determine if the device is currently "online"
-    // We consider it online if the server is running AND it was seen in the last 45 seconds.
     final isOnline = isServerRunning && 
         DateTime.now().difference(device.lastSeen).inSeconds < 45;
     
-    // Safely get the color for each status
     final statusInfo = {
       AccessStatus.pending: (Colors.blue, 'Pending approval'),
       AccessStatus.allowed: (Colors.green, 'Allowed'),
@@ -105,7 +99,7 @@ class _DeviceListItem extends ConsumerWidget {
         child: Container(
           width: 8,
           height: 8,
-          margin: const EdgeInsets.only(top: 6), // Align slightly with text
+          margin: const EdgeInsets.only(top: 6),
           decoration: BoxDecoration(
             color: isOnline ? Colors.greenAccent : Colors.redAccent,
             shape: BoxShape.circle,
@@ -116,37 +110,46 @@ class _DeviceListItem extends ConsumerWidget {
           ),
         ),
       ),
-      title: Text(device.ipAddress),
+      title: Text(device.ipAddress, style: const TextStyle(fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis,),
       subtitle: Text(
         statusInfo.$2,
-        style: TextStyle(color: statusInfo.$1, fontWeight: FontWeight.bold),
+        style: TextStyle(color: statusInfo.$1, fontWeight: FontWeight.bold, fontSize: 12),
       ),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: _buildActionButtons(notifier, device),
+      // **THE FIX: Replace the Row of buttons with a single PopupMenuButton**
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          switch (value) {
+            case 'temp_allow': notifier.tempAllowDevice(device.ipAddress); break;
+            case 'allow': notifier.allowDevice(device.ipAddress); break;
+            case 'reject': notifier.rejectDevice(device.ipAddress); break;
+            case 'kick': notifier.kickDevice(device.ipAddress); break;
+            case 'ban': notifier.banDevice(device.ipAddress); break;
+            case 'unblock': notifier.unblockDevice(device.ipAddress); break;
+          }
+        },
+        itemBuilder: (BuildContext context) {
+          switch (device.status) {
+            case AccessStatus.pending:
+              return [
+                const PopupMenuItem(value: 'temp_allow', child: Text('Temp Allow')),
+                const PopupMenuItem(value: 'allow', child: Text('Allow')),
+                const PopupMenuItem(value: 'reject', child: Text('Reject')),
+              ];
+            case AccessStatus.allowed:
+            case AccessStatus.tempAllowed:
+              return [
+                const PopupMenuItem(value: 'kick', child: Text('Kick')),
+                const PopupMenuItem(value: 'ban', child: Text('Ban')),
+              ];
+            case AccessStatus.tempBlocked:
+            case AccessStatus.banned:
+              return [const PopupMenuItem(value: 'unblock', child: Text('Unblock'))];
+            default:
+              return [];
+          }
+        },
+        icon: const Icon(Icons.more_vert),
       ),
     );
-  }
-
-  List<Widget> _buildActionButtons(ConnectedDevicesViewModel notifier, ConnectedDevice device) {
-    switch (device.status) {
-      case AccessStatus.pending:
-        return [
-          TextButton(onPressed: () => notifier.tempAllowDevice(device.ipAddress), child: const Text('Temp Allow')),
-          TextButton(onPressed: () => notifier.allowDevice(device.ipAddress), child: const Text('Allow')),
-          TextButton(onPressed: () => notifier.rejectDevice(device.ipAddress), child: const Text('Reject')),
-        ];
-      case AccessStatus.allowed:
-      case AccessStatus.tempAllowed:
-        return [
-          TextButton(onPressed: () => notifier.kickDevice(device.ipAddress), child: const Text('Kick')),
-          TextButton(onPressed: () => notifier.banDevice(device.ipAddress), child: const Text('Ban')),
-        ];
-      case AccessStatus.tempBlocked:
-      case AccessStatus.banned:
-        return [TextButton(onPressed: () => notifier.unblockDevice(device.ipAddress), child: const Text('Unblock'))];
-      default:
-        return [];
-    }
   }
 }

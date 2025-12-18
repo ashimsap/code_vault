@@ -9,8 +9,9 @@ class NotificationService {
   NotificationService._internal();
 
   Future<void> init() async {
+    // **THE FIX: Provide the resource NAME ONLY. Android will find it.**
     const AndroidInitializationSettings initializationSettingsAndroid = 
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_launcher');
 
     const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
@@ -19,7 +20,6 @@ class NotificationService {
     await _notificationsPlugin.initialize(initializationSettings);
   }
 
-  // **THE FIX: New method to request permissions**
   Future<void> requestPermissions() async {
     await _notificationsPlugin
         .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -27,6 +27,8 @@ class NotificationService {
   }
 
   Future<void> showConnectionNotification(String ipAddress) async {
+    final notificationId = ipAddress.hashCode;
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'new_connection', // channel ID
       'New Connections', // channel name
@@ -40,7 +42,7 @@ class NotificationService {
     );
 
     await _notificationsPlugin.show(
-      0, // notification id
+      notificationId, 
       'New Client Connection',
       'A new client is requesting permission from: $ipAddress',
       notificationDetails,
