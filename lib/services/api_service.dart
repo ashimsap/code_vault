@@ -25,12 +25,12 @@ class ApiService {
     if (request.method == 'GET') {
       if (path == 'api/snippets') return _getSnippets();
       if (path == 'status') return _getStatus();
-      if (path.startsWith('media/')) return _getMedia(path); // New media route
+      if (path.startsWith('media/')) return _getMedia(path); 
     }
 
     if (request.method == 'POST') {
       if (path == 'api/snippets/create') return await _createSnippet(request);
-      if (path == 'api/snippets/update') return await _updateSnippet(request);
+      if (path == 'api/snippets/update') return await _updateSnippet(request); 
     }
 
     return Response.notFound('API endpoint not found');
@@ -38,7 +38,7 @@ class ApiService {
 
   Future<Response> _getSnippets() async {
     final snippets = _ref.read(snippetListProvider);
-    return Response.ok(jsonEncode(snippets.map((s) => s.toJson()).toList()), headers: {'Content-Type': 'application/json'});
+    return Response.ok(jsonEncode(snippets.map((s) => s.toApiJson()).toList()), headers: {'Content-Type': 'application/json'});
   }
 
   Future<Response> _getStatus() async {
@@ -61,11 +61,7 @@ class ApiService {
       final fileName = p.basename(requestedPath);
       final file = File(p.join(documentsDir.path, fileName));
 
-      if (await file.exists()) {
-        // Security check: Ensure the file is within the app's documents directory
-        if (!p.isWithin(documentsDir.path, file.path)) {
-          return Response.forbidden('Access Denied');
-        }
+      if (await file.exists() && p.isWithin(documentsDir.path, file.path)) {
         final bytes = await file.readAsBytes();
         final mimeType = lookupMimeType(file.path);
         return Response.ok(bytes, headers: {'Content-Type': mimeType ?? 'application/octet-stream'});
@@ -78,12 +74,35 @@ class ApiService {
   }
 
   Future<Response> _createSnippet(Request request) async {
-    // ... create logic
-    return Response.ok('Not Implemented');
+    try {
+      final requestBody = await request.readAsString();
+      final json = jsonDecode(requestBody) as Map<String, dynamic>;
+      final newSnippet = Snippet(
+        description: json['description'] as String,
+        codeContent: json['codeContent'] as String,
+        fullDescription: json['fullDescription'] as String,
+        mediaPaths: [],
+        categories: [],
+        creationDate: DateTime.now(),
+        lastModificationDate: DateTime.now(),
+        deviceSource: 'Web Client',
+      );
+      await _ref.read(snippetListProvider.notifier).addSnippet(newSnippet);
+      return Response.ok(jsonEncode({'status': 'success'}));
+    } catch (e) {
+      return Response.internalServerError(body: 'Error creating snippet: $e');
+    }
   }
 
   Future<Response> _updateSnippet(Request request) async {
-    // ... update logic
-    return Response.ok('Not Implemented');
+    try {
+      final requestBody = await request.readAsString();
+      final json = jsonDecode(requestBody) as Map<String, dynamic>;
+      final snippet = Snippet.fromJson(json);
+      await _ref.read(snippetListProvider.notifier).updateSnippet(snippet);
+      return Response.ok(jsonEncode({'status': 'success'}));
+    } catch (e) {
+      return Response.internalServerError(body: 'Error updating snippet: $e');
+    }
   }
 }

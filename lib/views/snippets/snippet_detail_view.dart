@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:code_text_field/code_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as path;
 import 'package:image/image.dart' as img;
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:code_vault/models/snippet.dart';
 import 'package:code_vault/providers/providers.dart';
 import 'package:flutter_highlight/themes/monokai-sublime.dart';
@@ -46,14 +46,15 @@ class _SnippetDetailViewState extends ConsumerState<SnippetDetailView> {
     _debounce = Timer(const Duration(seconds: 2), _saveChanges);
   }
 
-  void _saveChanges() {
+  Future<void> _saveChanges() async {
     final updatedSnippet = _currentSnippet.copyWith(
       description: _titleController.text,
       fullDescription: _descriptionController.text,
       codeContent: _codeController.text,
       lastModificationDate: DateTime.now(),
     );
-    ref.read(snippetListProvider.notifier).updateSnippet(updatedSnippet);
+    _currentSnippet = updatedSnippet;
+    await ref.read(snippetListProvider.notifier).updateSnippet(updatedSnippet);
   }
 
   Future<void> _pickMedia() async {
@@ -66,10 +67,8 @@ class _SnippetDetailViewState extends ConsumerState<SnippetDetailView> {
     final fileName = path.basename(pickedFile.path);
     final savedImagePath = '${appDir.path}/$fileName';
 
-    // Read the image file, resize it, and save it.
     final imageBytes = await pickedFile.readAsBytes();
     final image = img.decodeImage(imageBytes)!;
-    // Resize to a more sensible width for mobile performance
     final resizedImage = img.copyResize(image, width: 720);
     await File(savedImagePath).writeAsBytes(img.encodeJpg(resizedImage, quality: 85));
 
@@ -99,59 +98,73 @@ class _SnippetDetailViewState extends ConsumerState<SnippetDetailView> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
+    // **THE FIX 1: Correctly reference the theme variable**
     final codeTheme = isDarkMode ? monokaiSublimeTheme : atomOneLightTheme;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: TextField(
-                controller: _titleController,
-                style: theme.textTheme.headlineSmall,
-                decoration: const InputDecoration.collapsed(hintText: 'Title'),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Container(
-                height: 150,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.cardColor.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+    // **THE FIX 2: Use the modern PopScope widget for saving on exit**
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (bool didPop) async {
+        if (didPop) {
+          return;
+        }
+        await _saveChanges();
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: TextField(
-                  controller: _descriptionController,
-                  maxLines: null,
-                  decoration: const InputDecoration.collapsed(hintText: 'Description...'),
+                  controller: _titleController,
+                  style: theme.textTheme.headlineSmall,
+                  decoration: const InputDecoration.collapsed(hintText: 'Title'),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _buildMediaSection(theme, _currentSnippet.mediaPaths),
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: Container(
-                color: theme.cardColor,
-                child: CodeTheme(
-                  data: CodeThemeData(styles: codeTheme),
-                  child: CodeField(
-                    controller: _codeController,
-                    expands: true,
-                    lineNumberStyle: const LineNumberStyle(margin: 15),
-                    textStyle: const TextStyle(fontFamily: 'monospace'),
-                    padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Container(
+                  height: 150,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.cardColor.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: _descriptionController,
+                    maxLines: null,
+                    decoration: const InputDecoration.collapsed(hintText: 'Description...'),
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildMediaSection(theme, _currentSnippet.mediaPaths),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: Container(
+                  color: theme.cardColor,
+                  child: CodeTheme(
+                    data: CodeThemeData(styles: codeTheme),
+                    child: CodeField(
+                      controller: _codeController,
+                      expands: true,
+                      lineNumberStyle: const LineNumberStyle(margin: 15),
+                      textStyle: const TextStyle(fontFamily: 'monospace'),
+                      padding: const EdgeInsets.fromLTRB(0, 12, 12, 12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

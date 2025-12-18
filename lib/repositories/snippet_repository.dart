@@ -8,7 +8,12 @@ class SnippetRepository {
 
   Future<Snippet> create(Snippet snippet) async {
     final db = await _storageHelper.database;
-    final id = await db.insert('snippets', snippet.toDbJson()); // Use toDbJson()
+
+    // Remove the id from the map, as the database will auto-generate it.
+    final data = snippet.toDbJson();
+    data.remove('id');
+
+    final id = await db.insert('snippets', data);
     return snippet.copyWith(id: id);
   }
 

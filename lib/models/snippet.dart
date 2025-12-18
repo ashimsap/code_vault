@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:path/path.dart' as p;
 
 class Snippet {
@@ -32,15 +31,18 @@ class Snippet {
     DateTime? lastModificationDate, String? deviceSource,
   }) {
     return Snippet(
-      id: id ?? this.id, description: description ?? this.description,
-      fullDescription: fullDescription ?? this.fullDescription, codeContent: codeContent ?? this.codeContent,
-      mediaPaths: mediaPaths ?? this.mediaPaths, categories: categories ?? this.categories,
-      creationDate: creationDate ?? this.creationDate, lastModificationDate: lastModificationDate ?? this.lastModificationDate,
+      id: id ?? this.id,
+      description: description ?? this.description,
+      fullDescription: fullDescription ?? this.fullDescription,
+      codeContent: codeContent ?? this.codeContent,
+      mediaPaths: mediaPaths ?? this.mediaPaths,
+      categories: categories ?? this.categories,
+      creationDate: creationDate ?? this.creationDate,
+      lastModificationDate: lastModificationDate ?? this.lastModificationDate,
       deviceSource: deviceSource ?? this.deviceSource,
     );
   }
 
-  // For the Web API - sends a proper list for mediaPaths
   Map<String, dynamic> toApiJson() => {
         'id': id,
         'description': description,
@@ -54,7 +56,6 @@ class Snippet {
         'deviceSource': deviceSource,
       };
 
-  // For the Local Database - sends a comma-separated string
   Map<String, dynamic> toDbJson() => {
         'id': id,
         'description': description,

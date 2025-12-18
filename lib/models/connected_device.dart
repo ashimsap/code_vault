@@ -1,30 +1,24 @@
-enum RegistrationStatus {
-  unregistered,
-  temporary,
-  permanent,
-}
+enum AccessStatus { allowed, tempBlocked, banned }
 
 class ConnectedDevice {
-  // The name of the device.
-  final String name;
-
-  // The IP address of the device.
   final String ipAddress;
-
-  // The registration status of the device.
-  final RegistrationStatus registrationStatus;
-
-  // The time the device connected.
-  final DateTime connectionTime;
-
-  // The duration of a temporary registration.
-  final Duration? temporaryRegistrationDuration;
+  final AccessStatus status;
+  final DateTime lastSeen;
 
   ConnectedDevice({
-    required this.name,
     required this.ipAddress,
-    required this.registrationStatus,
-    required this.connectionTime,
-    this.temporaryRegistrationDuration,
+    this.status = AccessStatus.allowed,
+    required this.lastSeen,
   });
+
+  ConnectedDevice copyWith({
+    AccessStatus? status,
+    DateTime? lastSeen,
+  }) {
+    return ConnectedDevice(
+      ipAddress: ipAddress,
+      status: status ?? this.status,
+      lastSeen: lastSeen ?? this.lastSeen,
+    );
+  }
 }

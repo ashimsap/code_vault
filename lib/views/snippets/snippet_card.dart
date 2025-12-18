@@ -102,7 +102,7 @@ class _SnippetCardState extends ConsumerState<SnippetCard> {
           const SizedBox(height: 8),
           Expanded(
             child: Text(
-              widget.snippet.codeContent,
+              widget.snippet.fullDescription,
               style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: textColor.withOpacity(0.7)),
               overflow: TextOverflow.ellipsis,
             ),
