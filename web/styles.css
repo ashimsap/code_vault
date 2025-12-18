@@ -1,59 +1,66 @@
 :root {
     --accent-color: #5892E5;
     --bg-light: #f0f2f5; --card-light: #ffffff; --text-light: #1c1e21;
-    --bg-dark: #36393e; --card-dark: #40444b; --text-dark: #dcddde;
+    --bg-dark: #36393e; --card-dark: #2f3136; --text-dark: #dcddde;
     --bg-color: var(--bg-light); --card-color: var(--card-light); --text-color: var(--text-light);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     margin: 0;
-    transition: background-color 0.3s, color 0.3s;
 }
 
 body.dark-mode { --bg-color: var(--bg-dark); --card-color: var(--card-dark); --text-color: var(--text-dark); }
 
+/* --- Main Grid View --- */
 .container { padding: 24px; max-width: 1200px; margin: auto; }
 h1 { text-align: center; }
-
-.permission-denied { text-align: center; padding-top: 20vh; }
-
-#snippets-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 16px;
-}
-
-.snippet-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; height: 220px; display: flex; flex-direction: column; overflow: hidden; }
+#snippets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.snippet-card { background-color: var(--card-color); border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer; height: 220px; overflow: hidden; }
 .snippet-card img { width: 100%; height: 100%; object-fit: cover; }
 
 .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--accent-color); color: white; border: none; font-size: 24px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer; }
 
-/* Detail View */
+/* --- Full Screen Detail View --- */
 .page-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 100; display: flex; flex-direction: column; }
-.detail-header { display: flex; align-items: center; padding: 12px; background-color: var(--card-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.detail-header { display: flex; align-items: center; padding: 12px; background-color: var(--card-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; }
 .back-button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color); margin-right: 16px; }
 .detail-header-title { flex-grow: 1; font-size: 1.2em; font-weight: bold; border: none; background: none; color: var(--text-color); }
 
-.detail-body { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; gap: 16px; }
+.detail-body { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
 
-.detail-meta-section { display: flex; gap: 16px; flex-wrap: wrap; }
-#detail-description { flex: 2; min-height: 120px; }
-
-/* **THE FIX for Media Picker** */
-.detail-media-box { flex: 1; min-width: 200px; height: 120px; background: var(--bg-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 1px dashed rgba(0,0,0,0.2); position: relative; }
+#detail-title { font-size: 2em; font-weight: bold; border: none; background: none; color: var(--text-color); width: 100%; margin-bottom: 8px; }
+#detail-description { min-height: 100px; }
+.detail-media-box { width: 250px; height: 150px; background: var(--card-color); border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 1px dashed rgba(0,0,0,0.2); position: relative; }
 .detail-media-box img { width: 100%; height: 100%; object-fit: cover; }
 #media-upload-label { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-
-/* **THE FIX for Line Numbers** */
-.code-editor-wrapper { flex-grow: 1; display: flex; position: relative; background-color: var(--card-color); border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); }
+/* --- IDE-Like Code Editor --- */
+.code-editor-wrapper { flex-grow: 1; display: grid; grid-template-columns: auto 1fr; background-color: var(--card-color); border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); overflow: hidden; }
 .dark-mode .code-editor-wrapper { border-color: rgba(255,255,255,0.1); }
-#line-numbers { padding: 12px 10px; font-family: monospace; text-align: right; color: var(--text-color); opacity: 0.5; user-select: none; border-right: 1px solid rgba(0,0,0,0.1); }
-.dark-mode #line-numbers { border-right-color: rgba(255,255,255,0.1); }
-#detail-code { flex-grow: 1; resize: none; border: none !important; background: none !important; }
 
+#line-numbers, #detail-code {
+    padding: 12px; font-family: monospace; font-size: 14px; line-height: 1.5;
+}
+
+#line-numbers {
+    text-align: right; color: var(--text-color); opacity: 0.5; user-select: none; 
+    border-right: 1px solid rgba(0,0,0,0.1);
+    white-space: pre; /* Use pre for consistent line breaks */
+}
+.dark-mode #line-numbers { border-right-color: rgba(255,255,255,0.1); }
+
+#detail-code {
+    resize: none; border: none !important; background: none !important; 
+    white-space: pre; /* Ensures textarea respects newlines like the line number div */
+    overflow-wrap: normal; /* Prevents word wrapping */
+    overflow-x: auto; /* Allows horizontal scrolling for long lines */
+}
+
+/* General Textarea/Input */
 textarea, input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(0,0,0,0.1); background-color: var(--card-color); color: var(--text-color); font-family: inherit; box-sizing: border-box; }
 .dark-mode textarea, .dark-mode input { border-color: rgba(255,255,255,0.1); }
+
+.permission-denied { text-align: center; padding-top: 20vh; }

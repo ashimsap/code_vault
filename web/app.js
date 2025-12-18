@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // ... (DOM elements are the same)
     const mainView = document.getElementById('main-view');
     const detailView = document.getElementById('detail-view');
     const snippetsGrid = document.getElementById('snippets-grid');
@@ -9,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let saveDebounceTimer;
     let keepAliveTimer;
 
-    // --- Main App Logic ---
+    // ... (main, checkStatus, startKeepAlive, handleRouting are the same)
     const main = async () => {
         try {
             const status = await checkStatus();
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hash.startsWith('#snippet/')) {
             const id = hash.substring(9);
             if (id === 'new') {
-                openDetailView(null); // Open blank editor for new snippet
+                openDetailView(null); 
             } else {
                 const snippet = snippets.find(s => s.id === parseInt(id));
                 snippet ? openDetailView(snippet) : showMainView();
@@ -47,7 +48,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- Data Fetching ---
     const fetchData = async () => {
         try {
             const snippetsRes = await fetch('/api/snippets');
@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // --- View Rendering ---
     const renderSnippetsGrid = () => {
         snippetsGrid.innerHTML = snippets.map(snippet => {
             const mediaContent = snippet.firstMediaUrl
@@ -79,14 +78,12 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="detail-header"><button class="back-button">&larr;</button></div>
             <div class="detail-body">
                 <input type="text" id="detail-title" value="${escapeHtml(currentSnippet.description)}">
-                <div class="detail-meta-section">
-                    <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
-                    <label id="media-upload-label" for="media-upload" class="detail-media-box">${mediaContent}</label>
-                    <input type="file" id="media-upload" style="display:none;" accept="image/*">
-                </div>
+                <textarea id="detail-description" placeholder="Description...">${escapeHtml(currentSnippet.fullDescription || '')}</textarea>
+                <label id="media-upload-label" for="media-upload" class="detail-media-box">${mediaContent}</label>
+                <input type="file" id="media-upload" style="display:none;" accept="image/*">
                 <div class="code-editor-wrapper">
                     <div id="line-numbers" class="line-numbers">1</div>
-                    <textarea id="detail-code" class="code-editor" placeholder="Code...">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
+                    <textarea id="detail-code" class="code-editor" placeholder="Code..." spellcheck="false">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
                 </div>
             </div>
         `;
@@ -95,11 +92,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const codeEditor = document.getElementById('detail-code');
         const lineNumbers = document.getElementById('line-numbers');
+        
+        const syncScroll = () => { lineNumbers.scrollTop = codeEditor.scrollTop; };
         const updateLineNumbers = () => {
             const lines = codeEditor.value.split('\n').length || 1;
             lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+            syncScroll();
         };
+        
         codeEditor.addEventListener('input', updateLineNumbers);
+        codeEditor.addEventListener('scroll', syncScroll);
         updateLineNumbers();
 
         document.querySelector('.back-button').addEventListener('click', () => window.history.back());
@@ -110,17 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showMainView = async () => {
-        // **THE FIX for saving data**
-        if (currentSnippet) await saveSnippet(); // Ensure last changes are saved before leaving
+        if (currentSnippet && (currentSnippet.description || currentSnippet.fullDescription || currentSnippet.codeContent)) {
+            await saveSnippet();
+        }
         currentSnippet = null;
 
         detailView.style.display = 'none';
         mainView.style.display = 'block';
         if (window.location.hash) window.history.pushState("", document.title, window.location.pathname + window.location.search);
-        fetchData(); // Refresh grid view
+        fetchData();
     };
 
-    // --- Actions ---
+    // ... (saveSnippet, uploadMedia, applyTheme, escapeHtml, and other event listeners are the same)
     const handleAutoSave = () => {
         clearTimeout(saveDebounceTimer);
         saveDebounceTimer = setTimeout(saveSnippet, 1500);
@@ -182,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const escapeHtml = (unsafe) => unsafe ? unsafe.replace(/[&<"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m])) : '';
 
-    // --- Event Listeners ---
     snippetsGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.snippet-card');
         if (card) window.location.hash = `#snippet/${card.dataset.id}`;
@@ -192,6 +194,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fab.addEventListener('click', () => window.location.hash = '#snippet/new');
 
-    // --- Initial Load ---
     main();
 });
