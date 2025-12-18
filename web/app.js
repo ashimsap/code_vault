@@ -68,11 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (snippet.firstMediaUrl) {
                 bodyContent = `<div class="card-media"><img src="${snippet.firstMediaUrl}" alt="Media"></div>`;
             } else {
-                // If no media, only show description
                 const descriptionHtml = snippet.fullDescription 
                     ? `<div class="card-description">${escapeHtml(snippet.fullDescription)}</div>` 
                     : '';
-                // Code is intentionally hidden in the card preview
                 bodyContent = `<div class="card-text-body">${descriptionHtml}</div>`;
             }
             
@@ -89,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const createNewSnippet = async () => {
         const newSnippetData = {
-            description: '', // Initial value is empty for auto-delete check
+            description: '', 
             fullDescription: '',
             codeContent: '',
             mediaPaths: [],
@@ -144,8 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="code-editor-wrapper">
-                    <div id="line-numbers" class="line-numbers">1</div>
-                    <textarea id="detail-code" class="code-editor" placeholder="Code..." spellcheck="false">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
+                    <pre id="line-numbers">1</pre>
+                    <textarea id="detail-code" placeholder="Type code here...">${escapeHtml(currentSnippet.codeContent || '')}</textarea>
                 </div>
             </div>
         `;
@@ -155,15 +153,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const codeEditor = document.getElementById('detail-code');
         const lineNumbers = document.getElementById('line-numbers');
         
-        const syncScroll = () => { lineNumbers.scrollTop = codeEditor.scrollTop; };
+        // Sync line numbers on scroll
+        codeEditor.addEventListener('scroll', () => {
+            lineNumbers.scrollTop = codeEditor.scrollTop;
+        });
+
+        // Update line numbers on input
         const updateLineNumbers = () => {
-            const lines = codeEditor.value.split('\n').length || 1;
-            lineNumbers.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('\n');
-            syncScroll();
+            const lines = codeEditor.value.split('\n').length;
+            lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n');
         };
-        
         codeEditor.addEventListener('input', updateLineNumbers);
-        codeEditor.addEventListener('scroll', syncScroll);
         updateLineNumbers();
 
         document.querySelector('.back-button').addEventListener('click', () => window.history.back());
@@ -174,15 +174,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const showMainView = async () => {
-        // Auto-delete empty snippets on backing out
         if (currentSnippet && currentSnippet.id) {
-            // First, ensure the final state is captured from the UI
             const finalDescription = document.getElementById('detail-title').value;
             const finalFullDescription = document.getElementById('detail-description').value;
             const finalCodeContent = document.getElementById('detail-code').value;
 
-            // Updated check: consider empty if description/title is empty, even if media exists?
-            // User requirement: "auto delete the snippet if the contents are blank like no title nodescription no media and no code"
             const isUnedited = 
                 !finalDescription && 
                 !finalFullDescription && 
@@ -192,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isUnedited) {
                 await fetch(`/api/snippets/delete?id=${currentSnippet.id}`, { method: 'POST' });
             } else {
-                await saveSnippet(); // Save any last minute changes
+                await saveSnippet();
             }
         }
 
@@ -257,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const applyTheme = (theme) => {
         document.documentElement.style.setProperty('--accent-color', theme.accentColor);
-        // Set RGB for RGBA fallback
         const hex = theme.accentColor.replace('#', '');
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);

@@ -4,6 +4,10 @@ import 'package:code_vault/views/snippets/snippet_card.dart';
 import 'package:code_vault/views/snippets/snippet_detail_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+
+// Provider to expose the scroll controller to MainScreen for back navigation logic
+final homeScrollControllerProvider = StateProvider<ScrollController?>((ref) => null);
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -13,9 +17,25 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final ScrollController _scrollController = ScrollController();
   List<int> _selectedSnippetIds = [];
 
   bool get _isInSelectionMode => _selectedSnippetIds.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    // Expose the controller via provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(homeScrollControllerProvider.notifier).state = _scrollController;
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _onToggleSelection(int snippetId) {
     setState(() {
@@ -85,6 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: snippets.isEmpty
             ? const Center(child: Text('No snippets yet. Tap the button to create one!'))
             : GridView.builder(
+                controller: _scrollController, // Attach controller
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 12,

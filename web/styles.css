@@ -1,4 +1,5 @@
 /* --- General & Theme --- */
+* { box-sizing: border-box; }
 :root {
     --accent-color: #5892E5;
     --bg-light: #f0f2f5; --card-light: #ffffff; --text-light: #1c1e21;
@@ -37,7 +38,6 @@ h1 { text-align: center; }
 /* Card Content Layout */
 .card-header {
     padding: 12px;
-    /* Increased opacity from 0.1 to 0.2 for better visibility in light mode */
     background-color: rgba(var(--accent-color-rgb), 0.2); 
     border-bottom: 1px solid rgba(var(--accent-color-rgb), 0.2);
 }
@@ -105,7 +105,7 @@ h1 { text-align: center; }
 .detail-header { display: flex; align-items: center; padding: 12px; background-color: var(--card-color); box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex-shrink: 0; border-bottom: 2px solid var(--accent-color); }
 .back-button { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-color); margin-right: 16px; transition: color 0.2s; }
 .back-button:hover { color: var(--accent-color); }
-.detail-body { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+.detail-body { padding: 16px; flex-grow: 1; display: flex; flex-direction: column; gap: 16px; overflow-y: hidden; /* Prevent body scroll */ }
 
 /* Flex layout for top section: inputs on left, media on right */
 .detail-top-section { display: flex; gap: 16px; flex-wrap: wrap; }
@@ -147,41 +147,63 @@ h1 { text-align: center; }
     transition: background-color 0.2s;
 }
 .detail-media-box:hover {
-    /* Increased hover opacity */
     background-color: rgba(var(--accent-color-rgb), 0.1);
 }
 .detail-media-box img { width: 100%; height: 100%; object-fit: contain; background: #000; }
 #media-upload-label { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--accent-color); font-weight: 500; }
 
-/* --- IDE-Like Code Editor --- */
-.code-editor-wrapper { 
+/* --- IDE-Like Code Editor (Sticky Footer) --- */
+.code-editor-wrapper {
     flex-grow: 1; 
-    display: grid; 
-    grid-template-columns: auto 1fr; 
-    background-color: var(--card-color); 
-    border-radius: 8px; 
-    overflow: hidden; 
-    border: 1px solid rgba(0,0,0,0.1); 
-    min-height: 300px; 
+    display: grid;
+    grid-template-columns: auto 1fr;
+    background-color: var(--card-color);
+    border-radius: 8px;
+    border: 1px solid rgba(0,0,0,0.1);
     transition: border-color 0.2s;
+    overflow: hidden; /* Contain children */
+    min-height: 0; /* Fix flexbox sizing issue */
 }
+
 .code-editor-wrapper:focus-within {
     border-color: var(--accent-color);
 }
+
 .dark-mode .code-editor-wrapper { border-color: rgba(255,255,255,0.1); }
+
 .dark-mode .code-editor-wrapper:focus-within { border-color: var(--accent-color); }
 
-#line-numbers, #detail-code { padding: 12px; font-family: monospace; font-size: 14px; line-height: 1.5; white-space: pre; background: none; border: none; outline: none; color: var(--text-color); }
-#line-numbers { 
-    text-align: right; 
-    opacity: 0.7; 
-    user-select: none; 
-    /* Increased opacity for better visibility */
-    background-color: rgba(var(--accent-color-rgb), 0.1); 
-    min-width: 40px; 
+#line-numbers,
+#detail-code {
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre;
+    background: none;
+    border: none;
+    outline: none;
+    margin: 0;
+}
+
+#line-numbers {
+    text-align: right;
+    user-select: none;
+    min-width: 48px;
+    background-color: rgba(var(--accent-color-rgb), 0.08);
     border-right: 1px solid rgba(0,0,0,0.05);
     color: var(--accent-color);
+    padding: 12px;
+    padding-bottom: 200px; /* Extra padding at the bottom */
+    height: 100%;
+    overflow: hidden;
 }
-#detail-code { resize: none; overflow-wrap: normal; overflow-x: auto; }
+
+#detail-code {
+    padding: 12px;
+    resize: none;
+    overflow: auto; /* Allow both vertical and horizontal scrolling */
+    color: var(--text-color);
+    height: 100%; /* Fill the wrapper */
+}
 
 .permission-denied { text-align: center; padding-top: 20vh; }

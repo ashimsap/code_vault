@@ -9,7 +9,6 @@ Future<void> main() async {
   // Initialize the notification service
   final notificationService = NotificationService();
   await notificationService.init();
-  // **THE FIX: Request permission on startup**
   await notificationService.requestPermissions();
 
   runApp(const ProviderScope(child: MyApp()));
