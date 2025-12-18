@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:code_vault/helpers/storage_helper.dart';
 import 'package:code_vault/http_server.dart';
-import 'package:code_vault/models/connected_device.dart';
 import 'package:code_vault/models/snippet.dart';
-import 'package:code_vault/repositories/device_repository.dart';
 import 'package:code_vault/repositories/snippet_repository.dart';
 import 'package:code_vault/services/api_service.dart';
 import 'package:code_vault/themes/app_themes.dart';
-import 'package:code_vault/viewmodels/connected_devices_viewmodel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
