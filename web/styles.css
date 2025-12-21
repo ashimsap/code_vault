@@ -156,7 +156,7 @@ h1 { text-align: center; }
 .code-editor-wrapper {
     flex-grow: 1; 
     display: grid;
-    grid-template-columns: auto 1fr;
+    grid-template-columns: auto minmax(0, 1fr);
     background-color: var(--card-color);
     border-radius: 8px;
     border: 1px solid rgba(0,0,0,0.1);
@@ -195,11 +195,18 @@ h1 { text-align: center; }
     padding: 12px;
     padding-bottom: 200px; /* Extra padding at the bottom */
     height: 100%;
-    overflow: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+#line-numbers::-webkit-scrollbar {
+    display: none;
 }
 
 #detail-code {
     padding: 12px;
+    padding-bottom: 200px; /* Match line numbers padding */
     resize: none;
     overflow: auto; /* Allow both vertical and horizontal scrolling */
     color: var(--text-color);
