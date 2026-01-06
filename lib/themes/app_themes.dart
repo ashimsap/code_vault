@@ -37,6 +37,7 @@ final baseDarkTheme = ThemeData.dark(useMaterial3: true).copyWith(
   ),
 );
 // --- ACCENT THEMES ---
+
 // List of available accent colors.
 final List<AccentTheme> accentThemes = [
   const AccentTheme('Default', Color(0xFF5892E5)),
