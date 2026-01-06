@@ -22,7 +22,6 @@ final baseLightTheme = ThemeData.light(useMaterial3: true).copyWith(
     elevation: 0,
   ),
 );
-
 // A modern, more visually appealing dark theme
 final baseDarkTheme = ThemeData.dark(useMaterial3: true).copyWith(
   scaffoldBackgroundColor: const Color(0xFF36393e), // Your chosen dark grey
