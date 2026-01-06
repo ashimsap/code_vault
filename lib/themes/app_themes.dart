@@ -36,8 +36,6 @@ final baseDarkTheme = ThemeData.dark(useMaterial3: true).copyWith(
     elevation: 0,
   ),
 );
-
-
 // --- ACCENT THEMES ---
 // List of available accent colors.
 final List<AccentTheme> accentThemes = [
