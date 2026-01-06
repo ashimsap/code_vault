@@ -9,7 +9,6 @@ class AccentTheme {
 }
 
 // --- BASE THEMES ---
-
 final baseLightTheme = ThemeData.light(useMaterial3: true).copyWith(
   scaffoldBackgroundColor: const Color(0xFFF5F5F5), // Off-white
   cardColor: Colors.white, // Brighter white cards
